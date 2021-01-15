@@ -11,6 +11,7 @@ log() {
 run_cis() {
   log "Running cis"
   sonobuoy run \
+    --namespace "${NAMESPACE}" \
     --kubeconfig "$kubeconfig_path" \
     --plugin https://raw.githubusercontent.com/vmware-tanzu/sonobuoy-plugins/master/cis-benchmarks/kube-bench-plugin.yaml \
     --plugin https://raw.githubusercontent.com/vmware-tanzu/sonobuoy-plugins/master/cis-benchmarks/kube-bench-master-plugin.yaml \
@@ -20,14 +21,14 @@ run_cis() {
 
 run_cncf() {
   log "Running cncf"
-  sonobuoy run --kubeconfig "$kubeconfig_path" --mode=certified-conformance --wait
+  sonobuoy run --namespace "${NAMESPACE}" --kubeconfig "$kubeconfig_path" --mode=certified-conformance --wait
 }
 
 run_giantswarm() {
   log "Running giantswarm"
   sonobuoy run \
     --kubeconfig "$kubeconfig_path" \
-    --namespace "$(cat "${CLUSTER_ID_PATH}")-sonobuoy" \
+    --namespace "${NAMESPACE}" \
     --plugin https://raw.githubusercontent.com/giantswarm/sonobuoy-plugin/master/giantswarm-plugin.yaml \
     --plugin-env giantswarm.TC_KUBECONFIG="$(cat "${TC_KUBECONFIG_PATH}")" \
     --plugin-env giantswarm.CP_KUBECONFIG="$(cat "${KUBECONFIG_PATH}")" \
@@ -38,22 +39,22 @@ run_giantswarm() {
 
 print_results() {
   log "Status"
-  sonobuoy status --kubeconfig "$kubeconfig_path"
+  sonobuoy status --namespace "${NAMESPACE}" --kubeconfig "$kubeconfig_path"
 
-  outfile=$(sonobuoy retrieve --kubeconfig "$kubeconfig_path")
+  outfile=$(sonobuoy retrieve --namespace "${NAMESPACE}" --kubeconfig "$kubeconfig_path")
 
   log "Results summary"
   sonobuoy results "$outfile"
 
   log "Detailed results"
-  sonobuoy results "$outfile" --mode detailed | jq -R 'fromjson? | select(.status)'
+  sonobuoy results "$outfile" --mode detailed
 
   log "Moving results to ${results_path}"
   mv "$outfile" "$results_path"
 }
 
 check_if_failed() {
-  if sonobuoy status --kubeconfig "$kubeconfig_path" | grep failed >/dev/null; then
+  if sonobuoy status --namespace "${NAMESPACE}" --kubeconfig "$kubeconfig_path" | grep failed >/dev/null; then
     log "Tests failed"
     exit 1
   fi
@@ -62,26 +63,31 @@ check_if_failed() {
 cleanup() {
   if [ $? != 0 ]; then
     log "Sonobuoy logs"
-    sonobuoy logs --kubeconfig "$kubeconfig_path"
+    sonobuoy logs --namespace "${NAMESPACE}" --kubeconfig "$kubeconfig_path"
   fi
 
   log "Deleting sonobuoy resources"
-  sonobuoy delete --kubeconfig "$kubeconfig_path" --all --wait || true
+  sonobuoy delete --namespace "${NAMESPACE}" --kubeconfig "$kubeconfig_path" --all --wait || true
 }
 
 trap cleanup INT TERM EXIT
 
 case "$1" in
 cis)
+  export NAMESPACE="sonobuoy"
   run_cis
   print_results
   ;;
 cncf)
+  export NAMESPACE="sonobuoy"
   run_cncf
   print_results
   check_if_failed
   ;;
 giantswarm)
+  # Since this plugin runs on the Management Cluster we need a different namespace to allow parallel pipeline execution.
+  NAMESPACE="$(cat "${CLUSTER_ID_PATH}")-sonobuoy"
+  export NAMESPACE
   run_giantswarm
   print_results
   check_if_failed
