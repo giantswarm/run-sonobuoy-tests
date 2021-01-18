@@ -15,7 +15,7 @@ run_cis() {
     --kubeconfig "$kubeconfig_path" \
     --plugin https://raw.githubusercontent.com/vmware-tanzu/sonobuoy-plugins/master/cis-benchmarks/kube-bench-plugin.yaml \
     --plugin https://raw.githubusercontent.com/vmware-tanzu/sonobuoy-plugins/master/cis-benchmarks/kube-bench-master-plugin.yaml \
-    --plugin-env kube-bench-master.KUBERNETES_VERSION=1.16 --plugin-env kube-bench-node.KUBERNETES_VERSION=1.16 \
+    --plugin-env kube-bench-master.KUBERNETES_VERSION=1.19 --plugin-env kube-bench-node.KUBERNETES_VERSION=1.19 \
     --wait
 }
 

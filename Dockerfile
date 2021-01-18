@@ -1,6 +1,6 @@
 FROM quay.io/giantswarm/alpine:3.12.0
 
-ARG SONOBUOY_VERSION=0.18.4
+ARG SONOBUOY_VERSION=0.20.0
 
 # Install sonobuoy
 RUN wget -qO - "https://github.com/vmware-tanzu/sonobuoy/releases/download/v${SONOBUOY_VERSION}/sonobuoy_${SONOBUOY_VERSION}_linux_amd64.tar.gz" | tar -C /usr/local/bin -xzf - \
