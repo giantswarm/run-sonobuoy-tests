@@ -34,6 +34,7 @@ run_giantswarm() {
     --plugin-env giantswarm.CP_KUBECONFIG="$(cat "${KUBECONFIG_PATH}")" \
     --plugin-env giantswarm.CLUSTER_ID="$(cat "${CLUSTER_ID_PATH}")" \
     --plugin-env giantswarm.PROVIDER="${PROVIDER}" \
+    --plugin-env giantswarm.TEST_DELETION="${TEST_DELETION}" \
     --mode=certified-conformance \
     --wait
 }
